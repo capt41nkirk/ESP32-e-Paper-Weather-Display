@@ -1,3 +1,17 @@
+# ESP32-e-Paper-Weather-Display (Fork using Open-Meteo API)
+
+### NOTE: ###
+April 2024
+
+This fork of the original ESP32-e-Paper-Weather-Display project uses the Open-Meteo API instead of the OpenWeatherMap API. The Open-Meteo API provides free access to weather data without the need for an API key. The API calls have been updated to reflect this change. The constraints of the Open-Meteo API are that it especially provides weather data for locations in Europe.
+
+
+Please ensure you update your credentials file with the appropriate latitude and longitude values for your location.
+
+---
+
+The original README.md file is included below for reference.
+
 # ESP32-e-Paper-Weather-Display
 
 ### NOTE: ###
