@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <HTTPClient.h>
+#include <ESP8266HTTPClient.h>
 
 #include "forecast_record.h"
 #include "common_functions.h"
@@ -243,7 +243,7 @@ bool obtain_wx_data(WiFiClient& client, const String& RequestType) {
   // Update for API 3.0 June '24
   // String uri = "/data/3.0/onecall?lat=" + LAT + "&lon=" + LON + "&appid=" + apikey + "&mode=json&units=" + units + "&lang=" + Language;
   // owmn: String uri = "/data/2.5/" + RequestType + "?lat=" + LAT + "&lon=" + LON + "&appid=" + apikey + "&mode=json&units=" + units + "&lang=" + Language;
-  String uri = "/v1/forecast?latitude=" + LAT + "&longitude=" + LON + units + "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,pressure_msl,cloud_cover,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,is_day,sunshine_duration&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,sunshine_duration,uv_index_max,precipitation_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant&timeformat=unixtime&forecast_days=3";
+  String uri = "/v1/forecast?latitude=" + LAT + "&longitude=" + LON + units + "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,pressure_msl,cloud_cover,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,is_day,sunshine_duration&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,sunshine_duration,uv_index_max,precipitation_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant&timeformat=unixtime&forecast_days=1&timezone=auto";
   
   //http.begin(uri,test_root_ca); //HTTPS example connection
   

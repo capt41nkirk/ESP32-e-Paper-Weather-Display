@@ -20,7 +20,7 @@
 
 #include "owm_credentials.h"
 #include <ArduinoJson.h>     // https://github.com/bblanchon/ArduinoJson
-#include <WiFi.h>            // Built-in
+#include <ESP8266WiFi.h>            // Built-in
 #include "time.h"
 #include <SPI.h>
 #define  ENABLE_GxEPD2_display 0
@@ -45,13 +45,13 @@
 enum alignmentType {LEFT, RIGHT, CENTER};
 
 // Connections for e.g. LOLIN D32
-static const uint8_t EPD_BUSY = 4;  // to EPD BUSY
-static const uint8_t EPD_CS   = 5;  // to EPD CS
-static const uint8_t EPD_RST  = 16; // to EPD RST
-static const uint8_t EPD_DC   = 17; // to EPD DC
-static const uint8_t EPD_SCK  = 18; // to EPD CLK
-static const uint8_t EPD_MISO = 19; // Master-In Slave-Out not used, as no data from display
-static const uint8_t EPD_MOSI = 23; // to EPD DIN
+static const uint8_t EPD_BUSY = 5;  // to EPD BUSY
+static const uint8_t EPD_CS   = 15;  // to EPD CS
+static const uint8_t EPD_RST  = 9; // to EPD RST
+static const uint8_t EPD_DC   = 10; // to EPD DC
+static const uint8_t EPD_SCK  = 14; // to EPD CLK
+static const uint8_t EPD_MISO = 12; // Master-In Slave-Out not used, as no data from display
+static const uint8_t EPD_MOSI = 13; // to EPD DIN
 
 // Connections for e.g. Waveshare ESP32 e-Paper Driver Board
 //static const uint8_t EPD_BUSY = 25;
@@ -62,7 +62,10 @@ static const uint8_t EPD_MOSI = 23; // to EPD DIN
 //static const uint8_t EPD_MISO = 12; // Master-In Slave-Out not used, as no data from display
 //static const uint8_t EPD_MOSI = 14;
 
-GxEPD2_BW<GxEPD2_290, GxEPD2_290::HEIGHT> display(GxEPD2_290(/*CS=D8*/ EPD_CS, /*DC=D3*/ EPD_DC, /*RST=D4*/ EPD_RST, /*BUSY=D2*/ EPD_BUSY));
+// 3-color
+GxEPD2_BW<GxEPD2_290_C90c, GxEPD2_290_C90c::HEIGHT> display(GxEPD2_290_C90c(/*CS=D8*/ EPD_CS, /*DC=D3*/ EPD_DC, /*RST=D4*/ EPD_RST, /*BUSY=D2*/ EPD_BUSY));
+// BW
+//GxEPD2_BW<GxEPD2_290, GxEPD2_290::HEIGHT> display(GxEPD2_290(/*CS=D8*/ EPD_CS, /*DC=D3*/ EPD_DC, /*RST=D4*/ EPD_RST, /*BUSY=D2*/ EPD_BUSY));
 
 U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;  // Select u8g2 font from here: https://github.com/olikraus/u8g2/wiki/fntlistall
 // Using fonts:
@@ -89,7 +92,7 @@ long    StartTime = 0;
 Forecast_record_type  WxConditions[1];
 Forecast_record_type  WxForecast[max_readings];
 
-#include <common.h>
+#include "common.h"
 
 float pressure_readings[max_readings]    = {0};
 float temperature_readings[max_readings] = {0};
@@ -148,7 +151,7 @@ void loop() { // this will never run!
 void BeginSleep() {
   display.powerOff();
   long SleepTimer = (SleepDuration * 60 - ((CurrentMin % SleepDuration) * 60 + CurrentSec)); //Some ESP32 are too fast to maintain accurate time
-  esp_sleep_enable_timer_wakeup((SleepTimer + 20) * 1000000LL); // Added +20 seconnds to cover ESP32 RTC timer source inaccuracies
+  //esp_sleep_enable_timer_wakeup((SleepTimer + 20) * 1000000LL); // Added +20 seconnds to cover ESP32 RTC timer source inaccuracies
 #ifdef BUILTIN_LED
   pinMode(BUILTIN_LED, INPUT); // If it's On, turn it off and some boards use GPIO-5 for SPI-SS, which remains low after screen use
   digitalWrite(BUILTIN_LED, HIGH);
@@ -156,7 +159,8 @@ void BeginSleep() {
   Serial.println("Entering " + String(SleepTimer) + "-secs of sleep time");
   Serial.println("Awake for : " + String((millis() - StartTime) / 1000.0, 3) + "-secs");
   Serial.println("Starting deep-sleep period...");
-  esp_deep_sleep_start();  // Sleep for e.g. 30 minutes
+  // esp_deep_sleep_start();  // Sleep for e.g. 30 minutes
+  ESP.deepSleep((SleepTimer + 20) * 1000000LL);
 }
 //#########################################################################################
 void DisplayWeather() {             // 2.9" e-paper display is 296x128 resolution
@@ -601,7 +605,7 @@ void ClearSky(int x, int y, bool IconSize, String IconName) {
   }
   if (IconName.endsWith("n")) addmoon(x, y + 3, scale, IconSize);
   scale = scale * 1.6;
-  addsun(x, y, scale, IconSize);
+  if (IconName.endsWith("d"))addsun(x, y, scale, IconSize);
 }
 //#########################################################################################
 void FewClouds(int x, int y, bool IconSize, String IconName) {
@@ -611,7 +615,7 @@ void FewClouds(int x, int y, bool IconSize, String IconName) {
     linesize = 3;
   }
   if (IconName.endsWith("n")) addmoon(x, y, scale, IconSize);
-  addsun(x - scale * 1.8, y - scale * 1.8, scale, IconSize);
+  if (IconName.endsWith("d"))addsun(x - scale * 1.8, y - scale * 1.8, scale, IconSize);
   addcloud(x, y, scale, linesize);
 }//#########################################################################################
 void ScatteredClouds(int x, int y, bool IconSize, String IconName) {
@@ -627,7 +631,7 @@ void ScatteredClouds(int x, int y, bool IconSize, String IconName) {
   if (IconName.endsWith("n")) addmoon(x, y + offset + (IconSize ? -8 : 0), scale, IconSize);
   addcloud(x + offset, y - offset * 1.2, scale / 1.5, linesize);
   addcloud(x, y + offset, scale, linesize);
-  addsun(x - scale * 1.8, y - scale * 1.8 + offset, scale, IconSize);
+  if (IconName.endsWith("d"))addsun(x - scale * 1.8, y - scale * 1.8 + offset, scale, IconSize);
 }
 //#########################################################################################
 void BrokenClouds(int x, int y, bool IconSize, String IconName) {
@@ -664,7 +668,7 @@ void ChanceRain(int x, int y, bool IconSize, String IconName) {
     linesize = 1;
   }
   if (IconName.endsWith("n")) addmoon(x - (IconSize ? 8 : 0), y, scale, IconSize);
-  addsun(x - scale * 1.8, y - scale * 1.8, scale, IconSize);
+  if (IconName.endsWith("d"))addsun(x - scale * 1.8, y - scale * 1.8, scale, IconSize);
   addcloud(x, y, scale, linesize);
   addrain(x, y, scale, IconSize);
 }
@@ -676,7 +680,7 @@ void ExpectRain(int x, int y, bool IconSize, String IconName) {
     linesize = 1;
   }
   if (IconName.endsWith("n")) addmoon(x, y, scale, IconSize);
-  addsun(x - scale * 1.8, y - scale * 1.8, scale, IconSize);
+  if (IconName.endsWith("d"))addsun(x - scale * 1.8, y - scale * 1.8, scale, IconSize);
   addcloud(x, y, scale, linesize);
   addrain(x, y, scale, IconSize);
 }
@@ -722,7 +726,7 @@ void Haze(int x, int y, bool IconSize, String IconName) {
     linesize = 1;
   }
   if (IconName.endsWith("n")) addmoon(x, y, scale, IconSize);
-  addsun(x, y - 2, scale * 1.4, IconSize);
+  if (IconName.endsWith("d"))addsun(x, y - 2, scale * 1.4, IconSize);
   addfog(x, y + 3 - (IconSize ? 12 : 0), scale * 1.4, linesize, IconSize);
 }
 //#########################################################################################
@@ -840,7 +844,8 @@ void InitialiseDisplay() {
   //display.init(115200, true, 2, false);
   display.init(115200); //for older Waveshare HAT's
   SPI.end();
-  SPI.begin(EPD_SCK, EPD_MISO, EPD_MOSI, EPD_CS);
+  // SPI.begin(EPD_SCK, EPD_MISO, EPD_MOSI, EPD_CS);
+  SPI.begin();
   display.setRotation(1);                    // Use 1 or 3 for landscape modes
   u8g2Fonts.begin(display);                  // connect u8g2 procedures to Adafruit GFX
   u8g2Fonts.setFontMode(1);                  // use u8g2 transparent mode (this is default)
